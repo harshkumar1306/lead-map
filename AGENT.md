@@ -1,12 +1,12 @@
 # Agent Guide
 
-This file describes what Scout does, how it is structured, and what a developer or AI agent needs to know to make changes to it safely.
+This file describes what LeadMap does, how it is structured, and what a developer or AI agent needs to know to make changes to it safely.
 
 ---
 
 ## What This Application Does
 
-Scout is a single-page tool that takes three inputs — business type, location, and radius — and returns a list of matching local businesses. Users can filter the list, act on individual rows, and export a selection to a spreadsheet.
+LeadMap is a single-page tool that takes three inputs — business type, location, and radius — and returns a list of matching local businesses. Users can filter the list, act on individual rows, and export a selection to a spreadsheet.
 
 There is no backend. The application runs entirely in the browser and talks directly to the Google Maps JavaScript API.
 

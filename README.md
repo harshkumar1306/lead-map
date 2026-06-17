@@ -1,4 +1,4 @@
-# Scout
+# LeadMap
 
 A minimalist single-page application for finding local businesses using the Google Places API.
 
@@ -6,7 +6,7 @@ A minimalist single-page application for finding local businesses using the Goog
 
 ## Purpose
 
-Scout helps you locate businesses in a specific area, extract their contact details, apply filters, and export the results as a spreadsheet. It is designed as a lightweight prospecting tool with no backend, no database, and no login.
+LeadMap helps you locate businesses in a specific area, extract their contact details, apply filters, and export the results as a spreadsheet. It is designed as a lightweight prospecting tool with no backend, no database, and no login.
 
 ---
 

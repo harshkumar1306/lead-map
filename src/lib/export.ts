@@ -4,7 +4,7 @@ import type { BusinessResult } from "../types"
 /**
  * Escapes fields and formats a list of businesses into a downloadable CSV file.
  */
-export function exportToCSV(businesses: BusinessResult[], filename = "scout-businesses.csv") {
+export function exportToCSV(businesses: BusinessResult[], filename = "leadmap-businesses.csv") {
   const headers = ["Business Name", "Category", "Rating", "Review Count", "Phone Number", "Website", "Address"]
   const rows = businesses.map(b => [
     b.name,
@@ -45,7 +45,7 @@ export function exportToCSV(businesses: BusinessResult[], filename = "scout-busi
 /**
  * Compiles a list of businesses into a worksheet and downloads as an .xlsx Excel file.
  */
-export function exportToExcel(businesses: BusinessResult[], filename = "scout-businesses.xlsx") {
+export function exportToExcel(businesses: BusinessResult[], filename = "leadmap-businesses.xlsx") {
   const data = businesses.map(b => ({
     "Business Name": b.name,
     "Category": b.category,

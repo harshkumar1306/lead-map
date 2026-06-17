@@ -1,6 +1,6 @@
 # Architecture
 
-Scout is a frontend-only single-page application. There is no server, no database, and no authentication layer. All data fetching happens directly from the browser against the Google Maps JavaScript API.
+LeadMap is a frontend-only single-page application. There is no server, no database, and no authentication layer. All data fetching happens directly from the browser against the Google Maps JavaScript API.
 
 ---
 

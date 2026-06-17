@@ -112,16 +112,16 @@ function App() {
   const handleExportCSV = () => {
     if (selectedBusinesses.length === 0) return
     const name = currentSearch 
-      ? `scout-${currentSearch.businessType}-${currentSearch.location}.csv`.toLowerCase().replace(/\s+/g, "-")
-      : "scout-leads.csv"
+      ? `leadmap-${currentSearch.businessType}-${currentSearch.location}.csv`.toLowerCase().replace(/\s+/g, "-")
+      : "leadmap-leads.csv"
     exportToCSV(selectedBusinesses, name)
   }
 
   const handleExportExcel = () => {
     if (selectedBusinesses.length === 0) return
     const name = currentSearch
-      ? `scout-${currentSearch.businessType}-${currentSearch.location}.xlsx`.toLowerCase().replace(/\s+/g, "-")
-      : "scout-leads.xlsx"
+      ? `leadmap-${currentSearch.businessType}-${currentSearch.location}.xlsx`.toLowerCase().replace(/\s+/g, "-")
+      : "leadmap-leads.xlsx"
     exportToExcel(selectedBusinesses, name)
   }
 
@@ -136,7 +136,7 @@ function App() {
             </div>
             <div>
               <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-                Scout
+                LeadMap
               </span>
               <span className="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-semibold uppercase tracking-wider">
                 MVP
@@ -279,16 +279,33 @@ function App() {
               </div>
 
               {/* Right Side: Export Options */}
-              <div className="flex items-center justify-between lg:justify-end gap-3 border-t lg:border-t-0 pt-4 lg:pt-0 border-border/60">
-                <div className="text-xs font-medium text-muted-foreground">
-                  {selectedIds.length > 0 ? (
-                    <span className="text-foreground/90 font-semibold flex items-center gap-1.5">
-                      <CheckCircle className="w-3.5 h-3.5 text-indigo-500" />
-                      {selectedIds.length} Selected
-                    </span>
-                  ) : (
-                    <span>Select items to export</span>
-                  )}
+              <div className="flex flex-wrap items-center justify-between lg:justify-end gap-3 border-t lg:border-t-0 pt-4 lg:pt-0 border-border/60">
+                <div className="flex items-center gap-3">
+                  {/* Select All checkbox for Mobile only */}
+                  <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer select-none md:hidden bg-secondary/35 border border-border/50 hover:bg-secondary/50 rounded-lg px-2.5 py-1.5 transition-all">
+                    <Checkbox
+                      checked={filteredBusinesses.length > 0 && selectedIds.length === filteredBusinesses.length}
+                      onChange={() => {
+                        if (selectedIds.length === filteredBusinesses.length) {
+                          setSelectedIds([])
+                        } else {
+                          setSelectedIds(filteredBusinesses.map((b) => b.id))
+                        }
+                      }}
+                    />
+                    <span>All</span>
+                  </label>
+
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {selectedIds.length > 0 ? (
+                      <span className="text-foreground/90 font-semibold flex items-center gap-1.5">
+                        <CheckCircle className="w-3.5 h-3.5 text-indigo-500" />
+                        {selectedIds.length} Selected
+                      </span>
+                    ) : (
+                      <span>Select items to export</span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -318,13 +335,13 @@ function App() {
 
             {/* Loading / Results Switch */}
             {isLoading ? (
-              <div className="w-full bg-card border border-border/80 rounded-xl p-12 flex flex-col items-center justify-center text-center space-y-4">
+              <div className="w-full bg-card border border-border/80 rounded-xl p-8 sm:p-12 flex flex-col items-center justify-center text-center space-y-4">
                 <div className="relative flex items-center justify-center">
                   <div className="w-12 h-12 rounded-full border-4 border-indigo-500/10 border-t-indigo-500 animate-spin"></div>
                   <Search className="w-5 h-5 text-indigo-500 absolute animate-pulse" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="font-semibold text-lg text-foreground">Scouting businesses...</h3>
+                  <h3 className="font-semibold text-lg text-foreground">Mapping leads...</h3>
                   <p className="text-sm text-muted-foreground max-w-sm">
                     {hasApiKey 
                       ? "Geocoding and querying Google Places API details. This may take a few seconds." 
@@ -388,7 +405,7 @@ function App() {
 
       {/* Footer */}
       <footer className="border-t border-border/40 py-8 text-center text-xs text-muted-foreground mt-12 bg-card/40">
-        <p>Scout Lead Locator • Minimalist B2B Prospect Finder</p>
+        <p>LeadMap • Minimalist B2B Prospect Finder</p>
       </footer>
     </div>
   )

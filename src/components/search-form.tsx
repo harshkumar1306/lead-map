@@ -28,7 +28,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({ onSearch, isLoading }) =
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full bg-card border border-border/80 rounded-xl p-6 shadow-sm transition-all duration-300 hover:shadow-md"
+      className="w-full bg-card border border-border/80 rounded-xl p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md"
     >
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
         {/* Business Type Input */}
