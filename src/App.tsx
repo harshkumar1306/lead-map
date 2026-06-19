@@ -18,8 +18,10 @@ import {
   Trash2, 
   Filter,
   CheckCircle,
-  Database
+  Database,
+  FileDown
 } from "lucide-react"
+import { downloadSnapshots } from "./lib/snapshot"
 
 function App() {
   const [businesses, setBusinesses] = React.useState<BusinessResult[]>([])
@@ -31,6 +33,14 @@ function App() {
   
   // Theme state
   const [isDarkMode, setIsDarkMode] = React.useState(true)
+
+  // Download progress state
+  const [downloadProgress, setDownloadProgress] = React.useState<{
+    active: boolean
+    step: string
+    current: number
+    total: number
+  } | null>(null)
 
   // Filter state
   const [filters, setFilters] = React.useState<SearchFilterState>({
@@ -123,6 +133,57 @@ function App() {
       ? `leadmap-${currentSearch.businessType}-${currentSearch.location}.xlsx`.toLowerCase().replace(/\s+/g, "-")
       : "leadmap-leads.xlsx"
     exportToExcel(selectedBusinesses, name)
+  }
+
+  const handleDownloadSnapshot = async (business: BusinessResult) => {
+    setDownloadProgress({
+      active: true,
+      step: "Initializing snapshot...",
+      current: 0,
+      total: 1
+    })
+    try {
+      await downloadSnapshots([business], (step, current, total) => {
+        setDownloadProgress({ active: true, step, current, total })
+      })
+      setTimeout(() => {
+        setDownloadProgress(null)
+      }, 1500)
+    } catch (err) {
+      console.error(err)
+      setDownloadProgress({
+        active: true,
+        step: "Download failed. Please check your network or try again.",
+        current: 1,
+        total: 1
+      })
+    }
+  }
+
+  const handleDownloadBulkSnapshots = async () => {
+    if (selectedBusinesses.length === 0) return
+    setDownloadProgress({
+      active: true,
+      step: "Initializing multi-snapshot download...",
+      current: 0,
+      total: selectedBusinesses.length
+    })
+    try {
+      await downloadSnapshots(selectedBusinesses, (step, current, total) => {
+        setDownloadProgress({ active: true, step, current, total })
+      })
+      setTimeout(() => {
+        setDownloadProgress(null)
+      }, 1500)
+    } catch (err) {
+      console.error(err)
+      setDownloadProgress({
+        active: true,
+        step: "Download failed. Please check your network or try again.",
+        current: selectedBusinesses.length,
+        total: selectedBusinesses.length
+      })
+    }
   }
 
   return (
@@ -329,6 +390,17 @@ function App() {
                     <Download className="w-3.5 h-3.5" />
                     <span>Excel</span>
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={selectedIds.length === 0}
+                    onClick={handleDownloadBulkSnapshots}
+                    className="h-9 px-3 gap-1.5 text-xs font-semibold text-indigo-500 border-indigo-500/20 bg-indigo-500/5 hover:bg-indigo-500/10 hover:text-indigo-600 dark:text-indigo-400 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20"
+                    title="Download full business snapshot data for selected items"
+                  >
+                    <FileDown className="w-3.5 h-3.5" />
+                    <span>Download Data</span>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -365,6 +437,7 @@ function App() {
                   businesses={filteredBusinesses}
                   selectedIds={selectedIds}
                   onSelectChange={setSelectedIds}
+                  onDownloadSnapshot={handleDownloadSnapshot}
                 />
               </div>
             )}
@@ -407,6 +480,77 @@ function App() {
       <footer className="border-t border-border/40 py-8 text-center text-xs text-muted-foreground mt-12 bg-card/40">
         <p>LeadMap • Minimalist B2B Prospect Finder</p>
       </footer>
+
+      {/* Premium Glassmorphic Progress Modal */}
+      {downloadProgress && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/40 backdrop-blur-md transition-opacity duration-300">
+          <div className="w-full max-w-md bg-card/85 dark:bg-card/75 border border-border/60 shadow-2xl rounded-2xl p-6 relative overflow-hidden backdrop-blur-xl animate-fade-in">
+            {/* Ambient background glow */}
+            <div className="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/15 rounded-full blur-2xl"></div>
+            <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-violet-500/15 rounded-full blur-2xl"></div>
+
+            <div className="flex flex-col items-center text-center space-y-4 relative z-10">
+              {/* Status Graphic */}
+              {downloadProgress.current === downloadProgress.total && 
+              (downloadProgress.step.includes("Compiling") || downloadProgress.step.includes("finished") || downloadProgress.current > 0 && !downloadProgress.step.includes("Download") && !downloadProgress.step.includes("photo") && !downloadProgress.step.includes("Fetch")) ? (
+                <div className="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center justify-center shadow-lg shadow-emerald-500/10 animate-bounce">
+                  <CheckCircle className="w-7 h-7" />
+                </div>
+              ) : (
+                <div className="relative flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-full border-4 border-indigo-500/10 border-t-indigo-500 animate-spin"></div>
+                  <FileDown className="w-6 h-6 text-indigo-500 absolute animate-pulse" />
+                </div>
+              )}
+
+              {/* Progress Labels */}
+              <div className="space-y-1">
+                <h3 className="font-semibold text-base text-foreground">
+                  {downloadProgress.current === downloadProgress.total && 
+                  (downloadProgress.step.includes("Compiling") || downloadProgress.step.includes("finished") || downloadProgress.current > 0 && !downloadProgress.step.includes("Download") && !downloadProgress.step.includes("photo") && !downloadProgress.step.includes("Fetch"))
+                    ? "Snapshot Package Ready!"
+                    : "Capturing Snapshots..."}
+                </h3>
+                <p className="text-xs text-muted-foreground/80 max-w-xs h-8 flex items-center justify-center font-medium">
+                  {downloadProgress.step}
+                </p>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="w-full space-y-1.5">
+                <div className="w-full bg-secondary/60 h-2.5 rounded-full overflow-hidden border border-border/20">
+                  <div
+                    className="bg-gradient-to-r from-indigo-500 to-violet-500 h-full rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${downloadProgress.total > 0 ? (downloadProgress.current / downloadProgress.total) * 100 : 0}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-[10px] font-semibold text-muted-foreground">
+                  <span>Business {downloadProgress.current} of {downloadProgress.total}</span>
+                  <span>{downloadProgress.total > 0 ? Math.round((downloadProgress.current / downloadProgress.total) * 100) : 0}%</span>
+                </div>
+              </div>
+
+              {/* Success / Done button if complete, otherwise info text */}
+              {(downloadProgress.current === downloadProgress.total && 
+              (downloadProgress.step.includes("Compiling") || downloadProgress.step.includes("finished") || downloadProgress.current > 0 && !downloadProgress.step.includes("Download") && !downloadProgress.step.includes("photo") && !downloadProgress.step.includes("Fetch"))) || 
+              downloadProgress.step.includes("failed") ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDownloadProgress(null)}
+                  className="mt-2 h-8 px-4 text-xs font-semibold text-indigo-600 bg-indigo-500/5 border-indigo-500/20 hover:bg-indigo-500/10 dark:text-indigo-400"
+                >
+                  Dismiss
+                </Button>
+              ) : (
+                <div className="text-[10px] text-muted-foreground/60 italic pt-1">
+                  Do not refresh the page while packing files.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

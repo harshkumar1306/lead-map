@@ -10,18 +10,20 @@ import {
 } from "./ui/table"
 import { Checkbox } from "./ui/checkbox"
 import { Button } from "./ui/button"
-import { Globe, MapPin, Copy, Check, Star, ExternalLink, ShieldAlert } from "lucide-react"
+import { Globe, MapPin, Copy, Check, Star, ExternalLink, ShieldAlert, FileDown } from "lucide-react"
 
 interface ResultsTableProps {
   businesses: BusinessResult[]
   selectedIds: string[]
   onSelectChange: (ids: string[]) => void
+  onDownloadSnapshot: (business: BusinessResult) => void
 }
 
 export const ResultsTable: React.FC<ResultsTableProps> = ({
   businesses,
   selectedIds,
-  onSelectChange
+  onSelectChange,
+  onDownloadSnapshot
 }) => {
   const [copiedId, setCopiedId] = React.useState<string | null>(null)
 
@@ -156,6 +158,16 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
 
               {/* Mobile Actions */}
               <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/40 pt-2.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 bg-background"
+                  onClick={() => onDownloadSnapshot(business)}
+                  title="Download Full Business Snapshot"
+                >
+                  <FileDown className="w-3.5 h-3.5" />
+                  <span>Snapshot</span>
+                </Button>
                 {business.phoneNumber && (
                   <Button
                     variant="outline"
@@ -295,6 +307,17 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        {/* Download Business Data Snapshot Action */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-indigo-500 hover:bg-indigo-500/10"
+                          onClick={() => onDownloadSnapshot(business)}
+                          title="Download Full Business Snapshot"
+                        >
+                          <FileDown className="w-3.5 h-3.5" />
+                        </Button>
+
                         {/* Copy Phone Number Action */}
                         <Button
                           variant="ghost"

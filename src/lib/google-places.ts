@@ -1,4 +1,4 @@
-import type { SearchParams, BusinessResult } from "../types"
+import type { SearchParams, BusinessResult, BusinessSnapshot, BusinessReview, BusinessPhoto } from "../types"
 
 let loadPromise: Promise<void> | null = null
 
@@ -225,5 +225,258 @@ export async function searchBusinesses(params: SearchParams): Promise<BusinessRe
         resolve(detailedBusinesses)
       })
     })
+  })
+}
+
+const MOCK_REVIEWS_POOL = [
+  {
+    authorName: "Sarah Jenkins",
+    rating: 5,
+    text: "Absolutely fantastic experience here! The staff was welcoming, the ambiance was top-notch, and the service was prompt. I will definitely be coming back here soon. Highly recommended!",
+    relativeTime: "2 days ago"
+  },
+  {
+    authorName: "David Chen",
+    rating: 4,
+    text: "Very solid place. The quality is outstanding, though it gets quite busy during peak hours so you might have to wait a bit. Clean facilities and helpful staff.",
+    relativeTime: "1 week ago"
+  },
+  {
+    authorName: "Emily Rodriguez",
+    rating: 5,
+    text: "One of my favorite spots in town! Everything is curated perfectly. I love the layout and the atmosphere is very relaxing. 10/10.",
+    relativeTime: "3 weeks ago"
+  },
+  {
+    authorName: "Marcus Thorne",
+    rating: 3,
+    text: "Decent overall, but a bit overpriced for what you get. The service was a bit slow, but the employees were polite. Might give it another try on a weekday.",
+    relativeTime: "1 month ago"
+  },
+  {
+    authorName: "Alina Petrova",
+    rating: 5,
+    text: "I was super impressed by the attention to detail. Extremely clean, professional, and overall a wonderful visit. Five stars!",
+    relativeTime: "2 months ago"
+  }
+]
+
+export function getMockBusinessSnapshot(placeId: string, basicInfo: BusinessResult): Promise<BusinessSnapshot> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const lat = 37.7749 + (basicInfo.name.length % 10) * 0.005
+      const lng = -122.4194 - (basicInfo.name.length % 7) * 0.005
+
+      const reviews: BusinessReview[] = MOCK_REVIEWS_POOL.map((rev, index) => {
+        const date = new Date(Date.now() - index * 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        return {
+          authorName: rev.authorName,
+          rating: rev.rating,
+          text: rev.text,
+          relativeTime: rev.relativeTime,
+          date,
+          profilePhotoUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(rev.authorName)}`
+        }
+      })
+
+      const photos: BusinessPhoto[] = [0, 1, 2].map((idx) => {
+        return {
+          url: `mock-photo-canvas://idx=${idx}&name=${encodeURIComponent(basicInfo.name)}`,
+          width: 1280,
+          height: 720,
+          htmlAttributions: ["LeadMap Mock Media"]
+        }
+      })
+
+      const weekdayText = [
+        "Monday: 8:00 AM – 6:00 PM",
+        "Tuesday: 8:00 AM – 6:00 PM",
+        "Wednesday: 8:00 AM – 6:00 PM",
+        "Thursday: 8:00 AM – 8:00 PM",
+        "Friday: 8:00 AM – 8:00 PM",
+        "Saturday: 9:00 AM – 5:00 PM",
+        "Sunday: Closed"
+      ]
+
+      const attributes = {
+        dineIn: basicInfo.category === "Restaurant" || basicInfo.category === "Cafe",
+        delivery: basicInfo.category === "Restaurant" || basicInfo.category === "Plumber" || basicInfo.category === "Auto Repair",
+        takeout: basicInfo.category === "Restaurant" || basicInfo.category === "Cafe",
+        reservable: basicInfo.category === "Restaurant" || basicInfo.category === "Dentist" || basicInfo.category === "Lawyer",
+        wheelchairAccessibleEntrance: true
+      }
+
+      const snapshot: BusinessSnapshot = {
+        id: placeId,
+        name: basicInfo.name,
+        placeId,
+        address: basicInfo.address,
+        coordinates: { lat, lng },
+        phoneNumber: basicInfo.phoneNumber || "(555) 019-2834",
+        internationalPhoneNumber: `+1 ${basicInfo.phoneNumber || "(555) 019-2834"}`,
+        website: basicInfo.website || `https://www.${basicInfo.name.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`,
+        categories: [basicInfo.category || "Business"],
+        businessStatus: "OPERATIONAL",
+        openingHours: {
+          isOpen: true,
+          weekdayText,
+          periods: [
+            { open: { day: 1, time: "0800" }, close: { day: 1, time: "1800" } },
+            { open: { day: 2, time: "0800" }, close: { day: 2, time: "1800" } },
+            { open: { day: 3, time: "0800" }, close: { day: 3, time: "1800" } },
+            { open: { day: 4, time: "0800" }, close: { day: 4, time: "2000" } },
+            { open: { day: 5, time: "0800" }, close: { day: 5, time: "2000" } },
+            { open: { day: 6, time: "0900" }, close: { day: 6, time: "1700" } }
+          ]
+        },
+        rating: basicInfo.rating || 4.5,
+        reviewCount: basicInfo.reviewCount || 120,
+        priceLevel: 2,
+        googleMapsUrl: `https://maps.google.com/?cid=${placeId}`,
+        overview: `A premier locally-owned ${basicInfo.category.toLowerCase()} offering premium quality products and professional customer service in the local area.`,
+        attributes,
+        menuUrl: basicInfo.category === "Restaurant" || basicInfo.category === "Cafe" ? `${basicInfo.website || "https://example.com"}/menu` : undefined,
+        reservationUrl: basicInfo.category === "Restaurant" || basicInfo.category === "Dentist" || basicInfo.category === "Lawyer" ? `${basicInfo.website || "https://example.com"}/reserve` : undefined,
+        orderingUrl: basicInfo.category === "Restaurant" || basicInfo.category === "Cafe" ? `${basicInfo.website || "https://example.com"}/order` : undefined,
+        reviews,
+        photos
+      }
+
+      resolve(snapshot)
+    }, 800)
+  })
+}
+
+export async function fetchBusinessSnapshot(placeId: string, basicInfo: BusinessResult): Promise<BusinessSnapshot> {
+  const apiKey = getApiKey()
+  
+  if (!apiKey) {
+    return getMockBusinessSnapshot(placeId, basicInfo)
+  }
+
+  try {
+    await loadGoogleMapsScript(apiKey)
+  } catch (error) {
+    console.error("Google Maps API script load error, falling back to mock snapshot:", error)
+    return getMockBusinessSnapshot(placeId, basicInfo)
+  }
+
+  return new Promise((resolve, reject) => {
+    const mapDiv = document.createElement("div")
+    const service = new google.maps.places.PlacesService(mapDiv)
+
+    service.getDetails(
+      {
+        placeId: placeId,
+        fields: [
+          "name",
+          "place_id",
+          "formatted_address",
+          "geometry",
+          "formatted_phone_number",
+          "international_phone_number",
+          "website",
+          "types",
+          "business_status",
+          "opening_hours",
+          "rating",
+          "user_ratings_total",
+          "price_level",
+          "url",
+          "editorial_summary",
+          "reviews",
+          "photos",
+          "dine_in",
+          "delivery",
+          "takeout",
+          "reservable",
+          "serves_beer",
+          "serves_breakfast",
+          "serves_brunch",
+          "serves_dinner",
+          "serves_lunch",
+          "serves_vegetarian_food",
+          "serves_wine",
+          "wheelchair_accessible_entrance"
+        ] as any
+      },
+      (detailResult, detailStatus) => {
+        if (detailStatus !== "OK" || !detailResult) {
+          reject(new Error(`Failed to fetch place details. Status: ${detailStatus}`))
+          return
+        }
+
+        const lat = detailResult.geometry?.location?.lat() ?? 0
+        const lng = detailResult.geometry?.location?.lng() ?? 0
+
+        const categories = detailResult.types && detailResult.types.length > 0
+          ? detailResult.types.map(t => t.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()))
+          : (basicInfo.category ? [basicInfo.category] : ["Business"])
+
+        const reviews: BusinessReview[] = (detailResult.reviews || []).map((rev) => {
+          const date = rev.time ? new Date(rev.time * 1000).toISOString().split('T')[0] : ""
+          return {
+            authorName: rev.author_name || "Anonymous",
+            rating: rev.rating ?? 0,
+            text: rev.text || "",
+            relativeTime: rev.relative_time_description,
+            date,
+            profilePhotoUrl: rev.profile_photo_url
+          }
+        })
+
+        const photos: BusinessPhoto[] = (detailResult.photos || []).map((photo) => {
+          return {
+            url: photo.getUrl({ maxWidth: photo.width || 1600, maxHeight: photo.height || 1600 }),
+            width: photo.width || 0,
+            height: photo.height || 0,
+            htmlAttributions: photo.html_attributions
+          }
+        })
+
+        const attributes = {
+          dineIn: (detailResult as any).dine_in ?? undefined,
+          delivery: (detailResult as any).delivery ?? undefined,
+          takeout: (detailResult as any).takeout ?? undefined,
+          reservable: (detailResult as any).reservable ?? undefined,
+          servesBeer: (detailResult as any).serves_beer ?? undefined,
+          servesBreakfast: (detailResult as any).serves_breakfast ?? undefined,
+          servesBrunch: (detailResult as any).serves_brunch ?? undefined,
+          servesDinner: (detailResult as any).serves_dinner ?? undefined,
+          servesLunch: (detailResult as any).serves_lunch ?? undefined,
+          servesVegetarianFood: (detailResult as any).serves_vegetarian_food ?? undefined,
+          servesWine: (detailResult as any).serves_wine ?? undefined,
+          wheelchairAccessibleEntrance: (detailResult as any).wheelchair_accessible_entrance ?? undefined,
+        }
+
+        const snapshot: BusinessSnapshot = {
+          id: detailResult.place_id || placeId,
+          name: detailResult.name || basicInfo.name,
+          placeId: detailResult.place_id || placeId,
+          address: detailResult.formatted_address || basicInfo.address,
+          coordinates: { lat, lng },
+          phoneNumber: detailResult.formatted_phone_number || basicInfo.phoneNumber,
+          internationalPhoneNumber: (detailResult as any).international_phone_number,
+          website: detailResult.website || basicInfo.website,
+          categories,
+          businessStatus: detailResult.business_status,
+          openingHours: detailResult.opening_hours ? {
+            isOpen: typeof detailResult.opening_hours.isOpen === "function" ? detailResult.opening_hours.isOpen() : (detailResult.opening_hours as any).isOpen,
+            weekdayText: detailResult.opening_hours.weekday_text || [],
+            periods: detailResult.opening_hours.periods as any
+          } : undefined,
+          rating: detailResult.rating ?? basicInfo.rating,
+          reviewCount: detailResult.user_ratings_total ?? basicInfo.reviewCount,
+          priceLevel: detailResult.price_level,
+          googleMapsUrl: detailResult.url,
+          overview: (detailResult as any).editorial_summary?.overview,
+          attributes,
+          reviews,
+          photos
+        }
+
+        resolve(snapshot)
+      }
+    )
   })
 }
